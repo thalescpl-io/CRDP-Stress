@@ -34,16 +34,25 @@ spec:
             - containerPort: 8090
           # PERF: CRDP protect/reveal is CPU-bound (FPE tokenization). With no
           # requests the scheduler packs pods blindly and nodes plateaued at
-          # ~80% under load; setting a request makes placement deterministic and
-          # pushed utilization to ~94% (measured). 1500m x 24 pods = 36 cores of
-          # requests, which fits the 3x16-core cluster with headroom for system
-          # pods. NOTE: no CPU limit is set on purpose so pods can burst into
-          # spare cores. This tuning reaches the ~48-core physical ceiling
-          # (~650k protect cards/s); exceeding it requires MORE NODES, not more
-          # pods (48 pods measured no faster than 24 on this hardware).
+          # ~80% under load; setting a request makes placement deterministic.
+          # NOTE: no CPU limit is set on purpose so pods can burst into spare
+          # cores -- the request governs placement, not the ceiling.
+          #
+          # SIZING: the request is a hard reservation. replicas x request must
+          # fit in the cluster's allocatable CPU MINUS what system pods already
+          # hold (CoreDNS, ingress-nginx, kube-proxy, node-exporter); if it does
+          # not, the excess pods sit in Pending with "Insufficient cpu" forever.
+          # Current setting: 250m x 6 pods = 1.5 cores reserved, sized to fit a
+          # small cluster (a 2-core node included).
+          #
+          # On larger hardware, scale BOTH values back up together: the measured
+          # optimum on a 3x16-core cluster was 1500m x 24 pods (36 cores of
+          # requests, ~94% utilization), which reached that cluster's ~48-core
+          # physical ceiling of ~650k protect cards/s. Verify headroom first:
+          #   kubectl describe nodes | grep -A5 "Allocated resources"
           resources:
             requests:
-              cpu: "1500m"
+              cpu: "250m"
       # PERF: keep replicas evenly balanced across all nodes. An unbalanced
       # spread (observed 24/16/8 when packing 48 pods) left a whole node at ~35%
       # while others saturated, wasting cores. ScheduleAnyway avoids blocking
@@ -55,11 +64,15 @@ spec:
           labelSelector:
             matchLabels:
               run: crdp
-  # PERF: 24 pods (~1 per 2 cores on the current 3x16-core cluster) is near
-  # optimal for THIS hardware. To approach 1,000,000 protect cards/sec, add
-  # worker nodes (~+2 sixteen-core nodes -> ~80 cores) and raise replicas to
-  # keep ~1 pod per 1.5-2 cores; core count is the throughput lever, not pods.
-  replicas: 24
+  # PERF: replica count must be sized to the cluster, in step with the CPU
+  # request above (see the SIZING note there). 6 pods x 250m = 1.5 cores of
+  # reservation, which schedules on small hardware.
+  #
+  # Core count is the throughput lever, not pod count: adding pods beyond
+  # roughly 1 per 1.5-2 physical cores buys nothing (48 pods measured no faster
+  # than 24 on the 3x16-core reference cluster). To scale up, add worker nodes
+  # and then raise replicas to keep that ratio.
+  replicas: 6
   selector:
       matchLabels:
         run: crdp

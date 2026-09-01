@@ -199,7 +199,7 @@ python3 multi_client.py -clients 6 -endpoint $CRDP_HOST \
 
 The `CRDP_K8_Deployment/` folder contains Kubernetes manifests and a deployment script for running CRDP across a multi-node, multi-pod Kubernetes cluster (plain `kubectl` by default; MicroK8s via the `--microk8s` flag):
 
-- **crdp-app-svc-ing.yml** — Deployment (24 replicas, with CPU requests and `topologySpreadConstraints` for even placement) and NodePort Service for CRDP.
+- **crdp-app-svc-ing.yml** — Deployment (6 replicas at a 250m CPU request each, with `topologySpreadConstraints` for even placement) and NodePort Service for CRDP. Both values are sized for a small cluster; raise them together on larger hardware — see the SIZING comment in the file.
 - **crdp-ingress.yml** — Ingress resource for host-based routing via the NGINX Ingress Controller. The `host:` field is templated as `${CRDP_HOST}` and filled in at apply time.
 - **makeSecretandDeploy.sh** — Deployment script that:
   1. Creates the `crdp-secret-name` Kubernetes secret from the CRDP App registration token.

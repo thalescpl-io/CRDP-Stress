@@ -5,22 +5,20 @@
       "WebFetch(domain:thalesdocs.com)",
       "WebFetch(domain:docs-cybersec.thalesgroup.com)",
       "WebFetch(domain:github.com)",
-
       "Bash(py *)",
       "Bash(python *)",
       "Bash(python3 *)",
       "PowerShell(py *)",
-
       "Bash(bash -n *)",
       "Bash(bash benchmark/*)",
       "Bash(chmod +x *)",
       "Bash(pandoc *)",
       "Bash(unzip -l *)",
-
       "Bash(git *)",
       "Bash(gh auth *)",
-
-      "Skill(artifact-design)"
+      "Skill(artifact-design)",
+      "Bash(python -c ' *)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
